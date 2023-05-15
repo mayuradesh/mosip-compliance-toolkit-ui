@@ -424,7 +424,7 @@
                     {{"viewProject.addCollection"|translate}}
                 </button>
                 <span align="end" class="buttonspan" 
-                *ngIf="!isAndroidAppMode" >
+                 >
                     <button mat-flat-button color="accent" (click)="downloadEncryptionKey()"
                         title="Click to download encryption key for Auth devices" class="encryptionkeyButton">
                         <mat-icon class="encrypticon">save</mat-icon>
@@ -437,12 +437,6 @@
                         {{"viewProject.scanDevice"|translate}}
                     </button>
                 </span>
-                <button mat-flat-button color="accent" (click)="scanDevice()" class="scandeviceButton-android"
-                *ngIf="isAndroidAppMode">
-                    <mat-icon *ngIf="isScanComplete" class="scandeviceicon">check_circle</mat-icon>
-                    <mat-icon *ngIf="!isScanComplete" class="scandeviceicon2">radio_button_unchecked</mat-icon>
-                    {{"viewProject.scanDevice"|translate}}
-                </button>
             </div>
         <div *ngIf="projectForm.controls['sbiPurpose']?.value == 'Registration'">
             <button mat-flat-button color="accent" (click)="addCollection()" class="isMobileButton ? collectionButtonMobile : collections-button2" [ngStyle]="buttonPosition">

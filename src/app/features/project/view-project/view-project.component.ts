@@ -18,6 +18,7 @@ import { environment } from 'src/environments/environment';
 import { TranslateService } from '@ngx-translate/core';
 import { UserProfileService } from 'src/app/core/services/user-profile.service';
 import { AbisProjectModel } from 'src/app/core/models/abis-project';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 export interface CollectionsData {
   collectionId: string;
@@ -480,11 +481,23 @@ export class ViewProjectComponent implements OnInit {
         if (res) {
           let obj = res[appConstants.RESPONSE];
           if (obj) {
-            var blob = new Blob([obj], { type: 'application/json' });
-            var link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.download = `key.cer`;
-            link.click();
+            if (!this.isAndroidAppMode) {
+              var blob = new Blob([obj], { type: 'application/json' });
+              var link = document.createElement('a');
+              link.href = window.URL.createObjectURL(blob);
+              link.download = `key.cer`;
+              link.click();
+            } else {
+             
+              //var blob = new Blob([obj], { type: 'application/json' });
+              
+              Filesystem.writeFile({
+                path: 'key.cer',
+                data: obj,
+                directory: Directory.Documents,
+                encoding: Encoding.UTF8,
+              });
+            }
           }
         } else {
           const err = {
