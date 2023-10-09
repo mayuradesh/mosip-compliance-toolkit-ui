@@ -7,7 +7,7 @@
         {{ "biometricDashboard.projectDashboard" | translate }} >>
     </button>
 </div>
-<div class="dashboard-button-second-container" *ngIf="dataLoaded">
+<div class="dashboard-button-second-container" *ngIf="dataLoaded && !impersonateReadOnlyMode">
     <button mat-flat-button color="accent" (click)="addTestData()" class="dashboard-button">
         <mat-icon>add</mat-icon>
         {{ "biometricDashboard.addBiometric" | translate }}

@@ -47,8 +47,10 @@
 		"failure": "فشل",
 		"projectRow": "لا توجد مشاريع متاحة.",
 		"tableDescription": "قائمة المشاريع",
-		"title": "تحديث تفاصيل المشروع",
-		"message": "أضف الحقول التالية المطلوبة للمشروع ، للمتابعة."
+		"selectPartnerTitle": "Impersonate a Parner",
+		"selectPartnerMessage": "Add a valid Parner Id, to impersonate the partner and view partner projects",
+		"updateProjectTitle": "تحديث تفاصيل المشروع",
+		"updateProjectMessage": "أضف الحقول التالية المطلوبة للمشروع ، للمتابعة."
 	},
 	"biometricDashboard": {
 		"projectDashboard": "لوحة تحكم المشاريع",

@@ -67,7 +67,9 @@ export class ViewProjectComponent implements OnInit {
   bioTestDataFileNames: string[] = [];
   resourceBundleJson: any = {};
   deviceImageUrls: string[] = [];
-
+  impersonateReadOnlyMode = localStorage.getItem(appConstants.IMPERSONATE_MODE) == appConstants.IMPERSONATE_MODE_READ_ONLY
+            ? true
+            : false;
   constructor(
     public authService: AuthService,
     private dataService: DataService,

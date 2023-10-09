@@ -9,13 +9,11 @@ import { TranslateService } from '@ngx-translate/core';
 import { UserProfileService } from '../../services/user-profile.service';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import * as appConstants from 'src/app/app.constants';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, flatMap } from 'rxjs';
 import Utils from 'src/app/app.utils';
-import { SbiProjectModel } from '../../models/sbi-project';
-import { AbisProjectModel } from '../../models/abis-project';
-import { SdkProjectModel } from '../../models/sdk-project';
 import { AppConfigService } from 'src/app/app-config.service';
+import { LoginRedirectService } from '../../services/loginredirect.service';
 
 @Component({
   selector: 'app-dialog',
@@ -47,9 +45,12 @@ export class DialogComponent implements OnInit {
   allowedFileNameLegth =
     this.appConfigService.getConfig()['allowedFileNameLegth'];
   allowedFileSize = this.appConfigService.getConfig()['allowedFileSize'];
-
+  partnerForm = new FormGroup({});
+  impersonateError = false;
+  impersonatePartnerId = '';
   constructor(
     private router: Router,
+    private redirectService: LoginRedirectService,
     private dialogRef: MatDialogRef<DialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
     private appConfigService: AppConfigService,
@@ -59,7 +60,7 @@ export class DialogComponent implements OnInit {
     private userProfileService: UserProfileService
   ) {
     dialogRef.disableClose = true;
-    
+
   }
   textDirection: any = this.userProfileService.getTextDirection();
   public closeMe() {
@@ -72,7 +73,7 @@ export class DialogComponent implements OnInit {
     this.resourceBundleJson = await Utils.getResourceBundle(this.userProfileService.getUserPreferredLanguage(), this.dataService);
     this.projectId = this.input.id;
     this.projectType = this.input.projectType;
-    if(this.projectType == appConstants.SBI) {
+    if (this.projectType == appConstants.SBI) {
       this.initSbiProjectForm();
       this.projectFormData = await Utils.getSbiProjectDetails(this.projectId, this.dataService, this.resourceBundleJson, this.dialog);
       Utils.populateSbiProjectForm(this.projectFormData, this.projectForm);
@@ -91,6 +92,10 @@ export class DialogComponent implements OnInit {
       this.imageUrls = this.data.selectedDeviceImagesUrl;
       this.getSelectedImageUrl();
     }
+    this.impersonateError = this.input.impersonateError;
+    this.impersonatePartnerId = this.input.impersonatePartnerId;
+    this.partnerForm.addControl('partnerId', new FormControl(''));
+    this.partnerForm.controls['partnerId'].setValidators(Validators.required);
     this.dataLoaded = true;
   }
 
@@ -157,7 +162,7 @@ export class DialogComponent implements OnInit {
         new FormControl({
           value: '',
           disabled:
-            controlId == 'abisHash' || controlId == 'websiteUrl'  ? false : true,
+            controlId == 'abisHash' || controlId == 'websiteUrl' ? false : true,
         })
       );
     });
@@ -254,7 +259,7 @@ export class DialogComponent implements OnInit {
   }
 
   getImageBase64Urls(base64Urls: string[]) {
-    return base64Urls.length == 0 ? 'There are no device images for this project': '';
+    return base64Urls.length == 0 ? 'There are no device images for this project' : '';
   }
 
   onFileSelect(event: Event, fileIndex: number): void {
@@ -277,8 +282,8 @@ export class DialogComponent implements OnInit {
               null,
               this.dialog,
               'File name is not allowed more than: ' +
-                this.allowedFileNameLegth +
-                ' characters'
+              this.allowedFileNameLegth +
+              ' characters'
             );
           } else {
             if (file.size > this.allowedFileSize) {
@@ -304,7 +309,7 @@ export class DialogComponent implements OnInit {
     this.loadPreviewImages(fileIndex);
   }
 
-  getSelectedImageUrl(){
+  getSelectedImageUrl() {
     const isAllUrlNull = this.imageUrls.every((value) => value == null);
     if (!isAllUrlNull) {
       this.imageSelected = [true, true, true, true];
@@ -314,10 +319,10 @@ export class DialogComponent implements OnInit {
         }
       }
     } else {
-      this.imageSelected = [true, false, false, false]; 
+      this.imageSelected = [true, false, false, false];
     }
   }
-  
+
   loadPreviewImages(fileIndex: number): void {
     for (let i = 0; i < this.selectedImages.length; i++) {
       const image = this.selectedImages[i];
@@ -337,7 +342,7 @@ export class DialogComponent implements OnInit {
     for (let i = 0; i < this.imagePreviewsVisible.length; i++) {
       this.imagePreviewsVisible[i] = (i == fileIndex);
     }
-  } 
+  }
 
   deleteImage(fileIndex: number) {
     this.selectedImages[fileIndex] = undefined;
@@ -345,7 +350,7 @@ export class DialogComponent implements OnInit {
     this.visibilityState[fileIndex] = false;
     this.imagePreviewsVisible[fileIndex] = false;
     console.log(this.imageUrls);
-}
+  }
 
   uploadImages() {
     this.dialogRef.close(this.imageUrls);
@@ -369,5 +374,15 @@ export class DialogComponent implements OnInit {
       }
       this.imageUrls = base64Url;
     });
+  }
+
+  async impersonatePartner() {
+    this.partnerForm.controls['partnerId'].markAsTouched();
+    if (this.partnerForm.valid) {
+      const partnerId = this.partnerForm.controls['partnerId'].value;
+      this.dataLoaded = false;
+      this.redirectService.impersonate(partnerId);
+    }
+
   }
 }

@@ -10,8 +10,8 @@ export class UserProfileService {
   private displayUserName = '';
   private userPreferredLanguage = '';
   private textDirection = '';
-
-  constructor() {}
+  
+  constructor() { }
 
   setUsername(username: string) {
     this.Username = username;
@@ -28,7 +28,7 @@ export class UserProfileService {
   getRoles(): string {
     const x = this.roles.split(',');
     x.splice(x.length - 1, 1);
-    return x.join(', ').replace(/_/g, ' ');
+    return x.join(', ');
   }
 
   getRoleCodes(): string {

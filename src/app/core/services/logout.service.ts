@@ -25,7 +25,15 @@ export class LogoutService {
       });
       return true;
     } else {
-      window.location.href = `${this.appService.getConfig().SERVICES_BASE_URL}${this.appService.getConfig().logout}?redirecturi=` + btoa(window.location.href);
+      let redirect = '';
+      const baseurl = window.location.href;
+      const baseurlarr = baseurl.split("?");
+      if (baseurlarr && baseurlarr.length > 0) {
+        redirect = btoa(baseurlarr[0]);
+      } else {
+        redirect = btoa(window.location.href);
+      }
+      window.location.href = `${this.appService.getConfig().SERVICES_BASE_URL}${this.appService.getConfig().logout}?redirecturi=` + redirect;
     }
     //let adminUrl = this.appService.getConfig().toolkitUiUrl;
     /*

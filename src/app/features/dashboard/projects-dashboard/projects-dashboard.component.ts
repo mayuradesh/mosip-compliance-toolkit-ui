@@ -2,7 +2,7 @@ import { OnInit, Component, ViewChild } from '@angular/core';
 import { TranslateService } from "@ngx-translate/core";
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSort, MatSortable } from '@angular/material/sort';
-import { ActivatedRoute, Router} from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from 'src/app/core/services/data-service';
 import { Subscription } from 'rxjs';
 import { MatTableDataSource } from '@angular/material/table';
@@ -13,6 +13,8 @@ import { UserProfileService } from 'src/app/core/services/user-profile.service';
 import { environment } from 'src/environments/environment';
 import { BreadcrumbService } from 'xng-breadcrumb';
 import { DialogComponent } from 'src/app/core/components/dialog/dialog.component';
+import { AppConfigService } from 'src/app/app-config.service';
+import { CookieService } from 'ngx-cookie-service';
 
 export interface ProjectData {
   id: string;
@@ -48,19 +50,23 @@ export class ProjectsDashboardComponent implements OnInit {
   @ViewChild(MatSort) sort: MatSort;
   isAndroidAppMode = environment.isAndroidAppMode == 'yes' ? true : false;
   textDirection: any = this.userProfileService.getTextDirection();
-  buttonPosition: any = this.textDirection == 'rtl' ? {'float': 'left'} : {'float': 'right'};
+  buttonPosition: any = this.textDirection == 'rtl' ? { 'float': 'left' } : { 'float': 'right' };
   resourceBundleJson: any = {};
-
+  impersonateError = false;
+  impersonatePartnerId = '';
+  impersonateReadOnlyMode = false;
   constructor(
     private router: Router,
     private translate: TranslateService,
-    private route: ActivatedRoute,
+    private activatedRoute: ActivatedRoute,
     private breadcrumbService: BreadcrumbService,
     private dialog: MatDialog,
     private userProfileService: UserProfileService,
     private dataService: DataService,
-    private paginatorIntl: MatPaginatorIntl
-  ) {}
+    private paginatorIntl: MatPaginatorIntl,
+    private appConfigService: AppConfigService,
+    private cookieService: CookieService
+  ) { }
 
   async ngOnInit() {
     this.translate.use(this.userProfileService.getUserPreferredLanguage());
@@ -75,8 +81,39 @@ export class ProjectsDashboardComponent implements OnInit {
     this.initBreadCrumb();
     this.dataLoaded = true;
     this.dataSource.paginator = this.paginator;
-    this.sort.sort(({ id: 'lastRunDt', start: 'desc'}) as MatSortable);
+    this.sort.sort(({ id: 'lastRunDt', start: 'desc' }) as MatSortable);
     this.dataSource.sort = this.sort;
+    //set the read only mode when impersonation is being done
+    this.impersonateReadOnlyMode = localStorage.getItem(appConstants.IMPERSONATE_MODE) == appConstants.IMPERSONATE_MODE_READ_ONLY
+      ? true
+      : false
+    await this.setImpersonateMode();
+    //show the option to impersonate another user, impersonatePartnerRole is available   
+    let roles: string[] = this.userProfileService.getRoles().split(",");
+    const impersonatePartnerRole = this.appConfigService.getConfig()['impersonatePartnerRole'];
+    if (roles && (roles.includes(impersonatePartnerRole))) {
+      await this.initImpersonatePartnerParams();
+      if (!this.impersonateReadOnlyMode) {
+        this.showSelectPartnerView();
+      }
+    }
+    this.dataLoaded = true;
+  }
+
+  initImpersonatePartnerParams() {
+    return new Promise((resolve) => {
+      this.activatedRoute.queryParams.subscribe((param) => {
+        let impersonateError = param['impersonateError'];
+        if (impersonateError == "exists") {
+          this.impersonateError = true;
+        }
+        let impersonatePartnerId = param['impersonatePartnerId'];
+        if (impersonatePartnerId && impersonatePartnerId != "") {
+          this.impersonatePartnerId = impersonatePartnerId;
+        }
+      });
+      resolve(true);
+    });
   }
 
   initBreadCrumb() {
@@ -86,7 +123,18 @@ export class ProjectsDashboardComponent implements OnInit {
       this.breadcrumbService.set('@projectDashboardBreadCrumb', `${breadcrumbLabels.projectsDashboard}`);
     }
   }
-
+  async setImpersonateMode() {
+    return new Promise((resolve) => {
+      this.activatedRoute.queryParams.subscribe((param) => {
+        let impersonateMode = param[appConstants.IMPERSONATE_MODE];
+        if (impersonateMode == appConstants.IMPERSONATE_MODE_READ_ONLY) {
+          localStorage.setItem(appConstants.IMPERSONATE_MODE, appConstants.IMPERSONATE_MODE_READ_ONLY);
+          this.impersonateReadOnlyMode = true;
+        }
+      });
+      resolve(true);
+    });
+  }
   async getProjects(): Promise<boolean> {
     let projectType = "";
     if (this.isAndroidAppMode) {
@@ -97,26 +145,26 @@ export class ProjectsDashboardComponent implements OnInit {
         this.dataService.getProjects(projectType).subscribe(
           (response: any) => {
             (async () => {
-                console.log(response);
-                let dataArr = response['response']['projects'];
-                let tableData = [];
-                for (let row of dataArr) {
-                  if (row.lastRunId) {
-                    let runStatus = await this.getTestRunStatus(row.lastRunId);
-                    tableData.push({
-                      ...row,
-                      lastRunStatus: runStatus,
-                    });
-                  } else {
-                    tableData.push({
-                      ...row,
-                      lastRunStatus: '',
-                    });
-                  }
+              console.log(response);
+              let dataArr = response['response']['projects'];
+              let tableData = [];
+              for (let row of dataArr) {
+                if (row.lastRunId) {
+                  let runStatus = await this.getTestRunStatus(row.lastRunId);
+                  tableData.push({
+                    ...row,
+                    lastRunStatus: runStatus,
+                  });
+                } else {
+                  tableData.push({
+                    ...row,
+                    lastRunStatus: '',
+                  });
                 }
-                this.dataSource = new MatTableDataSource(tableData);
-                resolve(true);
-              })().catch((error) => reject(error));
+              }
+              this.dataSource = new MatTableDataSource(tableData);
+              resolve(true);
+            })().catch((error) => reject(error));
           },
           (errors) => {
             Utils.showErrorMessage(this.resourceBundleJson, errors, this.dialog);
@@ -159,18 +207,18 @@ export class ProjectsDashboardComponent implements OnInit {
       const sbiHash = this.projectFormData.sbiHash;
       const websiteUrl = this.projectFormData.websiteUrl;
       if (sbiHash == 'To_Be_Added' || websiteUrl == 'To_Be_Added') {
-          await this.showUpdateProject(project.id, project.projectType);
+        await this.showUpdateProject(project.id, project.projectType);
       } else {
         await this.router.navigate([
           `toolkit/project/${project.projectType}/${project.id}`,
         ]);
       }
-    } 
+    }
     if (project.projectType == appConstants.SDK) {
       this.projectFormData = await Utils.getSdkProjectDetails(project.id, this.dataService, this.resourceBundleJson, this.dialog);
       const sdkHash = this.projectFormData.sdkHash;
       const websiteUrl = this.projectFormData.websiteUrl;
-      if (sdkHash == 'To_Be_Added'|| websiteUrl == 'To_Be_Added') {
+      if (sdkHash == 'To_Be_Added' || websiteUrl == 'To_Be_Added') {
         await this.showUpdateProject(project.id, project.projectType);
       } else {
         await this.router.navigate([
@@ -182,7 +230,7 @@ export class ProjectsDashboardComponent implements OnInit {
       this.projectFormData = await Utils.getAbisProjectDetails(project.id, this.dataService, this.resourceBundleJson, this.dialog);
       const abisHash = this.projectFormData.abisHash;
       const websiteUrl = this.projectFormData.websiteUrl;
-      if (abisHash == 'To_Be_Added'|| websiteUrl == 'To_Be_Added') {
+      if (abisHash == 'To_Be_Added' || websiteUrl == 'To_Be_Added') {
         await this.showUpdateProject(project.id, project.projectType);
       } else {
         await this.router.navigate([
@@ -192,7 +240,23 @@ export class ProjectsDashboardComponent implements OnInit {
     }
   }
 
-  async showUpdateProject(projectId: any, projectType: any) { 
+  async showSelectPartnerView() {
+    console.log(`impersonateError ${this.impersonateError}`);
+    console.log(`impersonatePartnerId ${this.impersonatePartnerId}`);
+
+    const body = {
+      case: 'SELECT_PARTNER',
+      impersonateError: this.impersonateError,
+      impersonatePartnerId: this.impersonatePartnerId
+    };
+    const dialogRef = this.dialog.open(DialogComponent, {
+      width: '600px',
+      data: body,
+    });
+    dialogRef.disableClose = true;
+  }
+
+  async showUpdateProject(projectId: any, projectType: any) {
     const body = {
       case: 'UPDATE_PROJECT',
       id: projectId,

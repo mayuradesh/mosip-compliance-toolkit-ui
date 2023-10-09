@@ -77,7 +77,8 @@ export const SBI_SCAN_DATA = 'sbiScanData';
 export const SBI_SELECTED_DEVICE = 'sbiSelectedDevice';
 export const SBI_SELECTED_PORT = 'sbiSelectedPort';
 export const SDK_PROJECT_URL = 'sdkProjectUrl';
-
+export const IMPERSONATE_MODE = 'impersonateMode';
+export const IMPERSONATE_MODE_READ_ONLY = 'readOnly';
 //android app
 export const DISCOVERY_INTENT_ACTION = 'io.sbi.device';
 export const D_INFO_INTENT_ACTION = '.Info';

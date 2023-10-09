@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
 import Utils from 'src/app/app.utils';
+import * as appConstants from 'src/app/app.constants';
 import { UserProfileService } from 'src/app/core/services/user-profile.service';
 import { BreadcrumbService } from 'xng-breadcrumb';
 import { TranslateService } from '@ngx-translate/core';
@@ -43,7 +44,9 @@ export class BiometricDashboardComponent implements OnInit {
   textDirection: any = this.userProfileService.getTextDirection();
   buttonPosition: any = this.textDirection == 'rtl' ? {'float': 'left'} : {'float': 'right'};
   resourceBundleJson: any = {};
-
+  impersonateReadOnlyMode = localStorage.getItem(appConstants.IMPERSONATE_MODE) == appConstants.IMPERSONATE_MODE_READ_ONLY
+  ? true
+  : false;
   constructor(
     private router: Router,
     private route: ActivatedRoute,
